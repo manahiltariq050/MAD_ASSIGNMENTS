@@ -1,0 +1,84 @@
+import React, { useState } from "react";
+import { View, Text, TextInput, SectionList, TouchableOpacity, Modal } from "react-native";
+
+const contactsData = [
+  { name: "Ali Khan", number: "03001234567", group: "Family" },
+  { name: "Sara Ali", number: "03019876543", group: "Friends" },
+  { name: "Ahmed Raza", number: "03011223344", group: "Work" },
+  { name: "Fatima Noor", number: "03005556666", group: "Family" },
+  { name: "Hassan Shah", number: "03112223344", group: "Work" },
+  { name: "Zainab Bano", number: "03456789012", group: "Friends" },
+  { name: "Usman Tariq", number: "03334445566", group: "Work" },
+  { name: "Nida Khan", number: "03216549870", group: "Friends" },
+  { name: "Imran Ali", number: "03456789222", group: "Family" },
+  { name: "Areeba Sheikh", number: "03123456789", group: "Work" },
+];
+
+export default function App() {
+  const [search, setSearch] = useState("");
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const filteredContacts = contactsData.filter((contact) =>
+    contact.name.toLowerCase().includes(search.toLowerCase()) ||
+    contact.number.includes(search)
+  );
+
+  const groupedContacts = ["Family", "Friends", "Work"].map((group) => ({
+    title: group,
+    data: filteredContacts.filter((contact) => contact.group === group),
+  }));
+
+  return (
+    <View className="p-4 mt-10">
+      <Text className="text-xl font-bold mb-4">Contact List</Text>
+      <TextInput
+        className="border p-2 mb-4 rounded"
+        placeholder="Search by name or number"
+        value={search}
+        onChangeText={setSearch}
+      />
+
+      <SectionList
+        sections={groupedContacts}
+        keyExtractor={(item, index) => item.number + index}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            className="p-3 bg-gray-100 mb-2 rounded"
+            onPress={() => {
+              setSelectedContact(item);
+              setModalVisible(true);
+            }}
+          >
+            <Text className="text-base font-medium">{item.name}</Text>
+            <Text className="text-sm text-gray-600">{item.number}</Text>
+          </TouchableOpacity>
+        )}
+        renderSectionHeader={({ section: { title } }) => (
+          <Text className="text-lg font-semibold mt-4 mb-2 text-blue-600">{title}</Text>
+        )}
+      />
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
+          <View className="bg-white p-6 rounded-xl w-4/5">
+            <Text className="text-xl font-bold mb-2">{selectedContact?.name}</Text>
+            <Text className="mb-1">Phone: {selectedContact?.number}</Text>
+            <Text className="mb-4">Group: {selectedContact?.group}</Text>
+            <TouchableOpacity
+              className="bg-blue-500 py-2 px-4 rounded"
+              onPress={() => setModalVisible(false)}
+            >
+              <Text className="text-white text-center">Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
