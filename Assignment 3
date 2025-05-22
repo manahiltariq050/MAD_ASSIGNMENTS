@@ -1,0 +1,99 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import * as Location from 'expo-location';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
+const Tab = createBottomTabNavigator();
+
+function HomeScreen() {
+  const [city, setCity] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setCity('Permission Denied');
+        setLoading(false);
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      let reverseGeocode = await Location.reverseGeocodeAsync(location.coords);
+      if (reverseGeocode.length > 0) {
+        setCity(reverseGeocode[0].city);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {loading ? (
+        <ActivityIndicator size="large" />
+      ) : (
+        <Text style={styles.text}>Your City: {city}</Text>
+      )}
+    </View>
+  );
+}
+
+function ProfileScreen({ navigation }) {
+  const [name, setName] = useState('Your Name');
+
+  useEffect(() => {
+    navigation.setOptions({ title: name });
+  }, [name]);
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>Edit Your Name:</Text>
+      <TextInput
+        style={styles.input}
+        value={name}
+        onChangeText={(text) => setName(text)}
+      />
+    </View>
+  );
+}
+
+function SettingsScreen() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>Settings Screen</Text>
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator>
+        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+        <Tab.Screen name="Settings" component={SettingsScreen} />
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20
+  },
+  text: {
+    fontSize: 18,
+    marginBottom: 15,
+  },
+  input: {
+    borderWidth: 1,
+    width: '100%',
+    padding: 10,
+    fontSize: 16,
+    borderRadius: 5,
+  },
+});
