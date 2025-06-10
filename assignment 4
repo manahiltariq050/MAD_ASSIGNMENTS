@@ -1,0 +1,164 @@
+npx create-expo-app RapidApiApp
+cd RapidApiApp
+npm install axios @react-navigation/native @react-navigation/native-stack
+npx expo install expo-sensors react-native-screens react-native-safe-area-context
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Accelerometer } from 'expo-sensors';
+import {
+  View,
+  Text,
+  ScrollView,
+  Button,
+  StyleSheet,
+} from 'react-native';
+import axios from 'axios';
+
+// ---------- Context API Setup ----------
+const ApiContext = createContext();
+
+const ApiProvider = ({ children }) => {
+  const [quote, setQuote] = useState('');
+  const [postResponse, setPostResponse] = useState('');
+  const [putResponse, setPutResponse] = useState('');
+
+  const headers = {
+    'X-RapidAPI-Key': 'YOUR_RAPID_API_KEY', // Replace this with your key
+    'X-RapidAPI-Host': 'quotes15.p.rapidapi.com',
+  };
+
+  const fetchQuote = async () => {
+    try {
+      const res = await axios.get(
+        'https://quotes15.p.rapidapi.com/quotes/random/',
+        { headers }
+      );
+      setQuote(res.data.content);
+    } catch (err) {
+      console.error('GET error:', err.message);
+    }
+  };
+
+  const postData = async () => {
+    try {
+      const res = await axios.post(
+        'https://jsonplaceholder.typicode.com/posts',
+        {
+          title: 'My Post',
+          body: 'This is a fake post body',
+          userId: 1,
+        }
+      );
+      setPostResponse(JSON.stringify(res.data, null, 2));
+    } catch (err) {
+      console.error('POST error:', err.message);
+    }
+  };
+
+  const putData = async () => {
+    try {
+      const res = await axios.put(
+        'https://jsonplaceholder.typicode.com/posts/1',
+        {
+          title: 'Updated Title',
+        }
+      );
+      setPutResponse(JSON.stringify(res.data, null, 2));
+    } catch (err) {
+      console.error('PUT error:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuote();
+    postData();
+    putData();
+  }, []);
+
+  return (
+    <ApiContext.Provider value={{ quote, postResponse, putResponse }}>
+      {children}
+    </ApiContext.Provider>
+  );
+};
+
+// ---------- Screens ----------
+const HomeScreen = ({ navigation }) => {
+  const { quote, postResponse, putResponse } = useContext(ApiContext);
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.heading}>Quote (GET)</Text>
+      <Text style={styles.text}>{quote}</Text>
+
+      <Text style={styles.heading}>Post Response (POST)</Text>
+      <Text style={styles.text}>{postResponse}</Text>
+
+      <Text style={styles.heading}>Put Response (PUT)</Text>
+      <Text style={styles.text}>{putResponse}</Text>
+
+      <View style={{ marginTop: 30 }}>
+        <Button
+          title="Go to Sensor Screen"
+          onPress={() => navigation.navigate('Sensor')}
+        />
+      </View>
+    </ScrollView>
+  );
+};
+
+const SensorScreen = () => {
+  const [data, setData] = useState({ x: 0, y: 0, z: 0 });
+
+  useEffect(() => {
+    const sub = Accelerometer.addListener(setData);
+    Accelerometer.setUpdateInterval(500);
+    return () => sub && sub.remove();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.heading}>Accelerometer Data</Text>
+      <Text style={styles.text}>X: {data.x.toFixed(2)}</Text>
+      <Text style={styles.text}>Y: {data.y.toFixed(2)}</Text>
+      <Text style={styles.text}>Z: {data.z.toFixed(2)}</Text>
+    </View>
+  );
+};
+
+// ---------- Navigation ----------
+const Stack = createNativeStackNavigator();
+
+export default function App() {
+  return (
+    <ApiProvider>
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Sensor" component={SensorScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ApiProvider>
+  );
+}
+
+// ---------- Styles ----------
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 15,
+    color: '#333',
+  },
+  text: {
+    fontSize: 16,
+    marginTop: 8,
+    color: '#555',
+  },
+});
